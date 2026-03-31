@@ -151,6 +151,38 @@ scores = niftyreg.measure(fixed, warped, metrics=("nmi", "lncc", "ssd"))
 print(scores)
 ```
 
+### 4.4 Converting to a SimpleITK `Transform`
+
+If you prefer to work with a native SimpleITK transform (for example to use `sitk.Resample` directly),
+you can convert the non-rigid result into a `sitk.DisplacementFieldTransform`:
+
+```python
+import SimpleITK as sitk
+import niftyreg
+
+# Run non-rigid registration first
+result = niftyreg.f3d(fixed, moving, options=options)
+
+# 1) Convert control-point grid (CPP) to a displacement field transform
+displacement = niftyreg.transform_to_displacement(fixed, result.cpp)  # kind="displacement"
+
+# 2) Extract the underlying SimpleITK vector image
+disp_img = displacement.image  # type: sitk.Image, vector image (3 components for 3D)
+
+# 3) Wrap it as a SimpleITK Transform
+sitk_transform = sitk.DisplacementFieldTransform(disp_img)
+
+# Example: use the transform with SimpleITK's Resample
+warped_sitk = sitk.Resample(
+    moving,            # image to warp
+    fixed,             # reference geometry
+    sitk_transform,    # non-rigid transform
+    sitk.sitkLinear,
+    options.padding_value,
+    moving.GetPixelID(),
+)
+```
+
 ---
 
 ## 5. Example scripts
