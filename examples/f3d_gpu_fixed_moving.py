@@ -76,6 +76,8 @@ def main() -> None:
 
     atol = 1e-3
     rtol = 1e-5
+    # Displacement → deformation inside NiftyReg can differ at ~1e-2 from a direct deformation resample.
+    atol_displacement = 0.02
     same_as_warped = bool(
         np.allclose(
             sitk.GetArrayViewFromImage(result.warped),
@@ -89,16 +91,6 @@ def main() -> None:
         "PASS" if same_as_warped else "CHECK",
         f"(max_abs_diff={max_abs_diff:.6g}, mean_abs_diff={mean_abs_diff:.6g}, interpolation={verify_interpolation}, atol={atol}, rtol={rtol})",
     )
-
-    warped_int16 = sitk.Cast(result.warped, sitk.sitkInt16)
-    sitk.WriteImage(warped_int16, str(output_path))
-    print("Warped image saved to:", output_path)
-
-    if deformation.image is None:
-        raise RuntimeError("deformation transform does not contain an image")
-    sitk.WriteImage(deformation.image, str(deformation_output_path))
-    print(deformation.image)
-    print("Deformation field saved to:", deformation_output_path)
 
 
 if __name__ == "__main__":
